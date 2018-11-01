@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="edu.iot.common.dao.TodoDao">
+	
+	<select id="count" resultType="int">
+		select count(*)
+		from todo
+	</select>
+	
+	<select id="getPage" parameterType="map" resultType="Todo">
+		select todo_id, title, content, priority, deadline, checked, reg_date
+		from (
+			select ROW_NUMBER() over (order by reg_date desc) as seq,
+				todo_id, title, content, priority, deadline, checked, reg_date
+				from todo
+		)
+		where seq between #{start} and #{end}
+		order by ${orderBy} <if test="orderBy.equals('deadLine')">desc</if>
+	</select>
+	
+	<insert id="insert" parameterType="Todo"
+		keyColumn="todo_id" keyProperty="todoId">
+		insert into todo (
+			todo_id, title, content, priority, deadline, checked, reg_date, update_date 
+		) values (
+			todo_seq.NEXTVAL, #{title}, #{content}, #{priority},
+			<if test="deadLine == null">sysdate,</if> 
+			<if test="deadLine != null">#{deadLine},</if> 
+			0, sysdate, sysdate
+		)
+	</insert>
+	
+	<select id="findById" parameterType="long" resultType="Todo">
+		select * from todo
+		where todo_id=#{toDoId}
+	</select>
+	
+	<update id="update" parameterType="Todo">
+		update todo set
+			title = #{ title },
+			content = #{ content },
+			priority = #{ priority },
+			deadline =
+			<if test="deadLine == null">sysdate,</if> 
+			<if test="deadLine != null">#{deadLine},</if> 
+			update_date = sysdate
+		where todo_id=#{toDoId}
+	</update>
+	
+	<update id="checking" parameterType="Todo">
+		update todo set
+			checked = #{checked}
+		where todo_id=#{toDoId}
+	</update>
+	
+	<delete id="delete" parameterType="long">
+		delete from todo
+		where todo_id=#{toDoId}
+	</delete>
+	
+</mapper>
